@@ -2,8 +2,10 @@ import glob
 import mimetypes
 import os
 import platform
+import random
 import shutil
 import ssl
+import string
 import subprocess
 import urllib
 from pathlib import Path
@@ -12,7 +14,7 @@ from tqdm import tqdm
 
 import roop.globals
 
-TEMP_DIRECTORY = 'temp'
+TEMP_DIRECTORY = 'temp' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
 TEMP_VIDEO_FILE = 'temp.mp4'
 
 # monkey patch ssl for mac
@@ -32,7 +34,8 @@ def run_ffmpeg(args: List[str]) -> bool:
 
 
 def detect_fps(target_path: str) -> float:
-    command = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate', '-of', 'default=noprint_wrappers=1:nokey=1', target_path]
+    command = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=r_frame_rate', '-of',
+               'default=noprint_wrappers=1:nokey=1', target_path]
     output = subprocess.check_output(command).decode().strip().split('/')
     try:
         numerator, denominator = map(int, output)
@@ -45,14 +48,18 @@ def detect_fps(target_path: str) -> float:
 def extract_frames(target_path: str, fps: float = 30) -> bool:
     temp_directory_path = get_temp_directory_path(target_path)
     temp_frame_quality = roop.globals.temp_frame_quality * 31 // 100
-    return run_ffmpeg(['-hwaccel', 'auto', '-i', target_path, '-q:v', str(temp_frame_quality), '-pix_fmt', 'rgb24', '-vf', 'fps=' + str(fps), os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format)])
+    return run_ffmpeg(
+        ['-hwaccel', 'auto', '-i', target_path, '-q:v', str(temp_frame_quality), '-pix_fmt', 'rgb24', '-vf',
+         'fps=' + str(fps), os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format)])
 
 
 def create_video(target_path: str, fps: float = 30) -> bool:
     temp_output_path = get_temp_output_path(target_path)
     temp_directory_path = get_temp_directory_path(target_path)
     output_video_quality = (roop.globals.output_video_quality + 1) * 51 // 100
-    commands = ['-hwaccel', 'auto', '-r', str(fps), '-i', os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format), '-c:v', roop.globals.output_video_encoder]
+    commands = ['-hwaccel', 'auto', '-r', str(fps), '-i',
+                os.path.join(temp_directory_path, '%04d.' + roop.globals.temp_frame_format), '-c:v',
+                roop.globals.output_video_encoder]
     if roop.globals.output_video_encoder in ['libx264', 'libx265', 'libvpx']:
         commands.extend(['-crf', str(output_video_quality)])
     if roop.globals.output_video_encoder in ['h264_nvenc', 'hevc_nvenc']:
@@ -63,7 +70,9 @@ def create_video(target_path: str, fps: float = 30) -> bool:
 
 def restore_audio(target_path: str, output_path: str) -> None:
     temp_output_path = get_temp_output_path(target_path)
-    done = run_ffmpeg(['-i', temp_output_path, '-i', target_path, '-c:v', 'copy', '-map', '0:v:0', '-map', '1:a:0', '-y', output_path])
+    done = run_ffmpeg(
+        ['-i', temp_output_path, '-i', target_path, '-c:v', 'copy', '-map', '0:v:0', '-map', '1:a:0', '-y',
+         output_path])
     if not done:
         move_temp(target_path, output_path)
 
@@ -142,7 +151,9 @@ def conditional_download(download_directory_path: str, urls: List[str]) -> None:
             request = urllib.request.urlopen(url)  # type: ignore[attr-defined]
             total = int(request.headers.get('Content-Length', 0))
             with tqdm(total=total, desc='Downloading', unit='B', unit_scale=True, unit_divisor=1024) as progress:
-                urllib.request.urlretrieve(url, download_file_path, reporthook=lambda count, block_size, total_size: progress.update(block_size))  # type: ignore[attr-defined]
+                urllib.request.urlretrieve(url, download_file_path,
+                                           reporthook=lambda count, block_size, total_size: progress.update(
+                                               block_size))  # type: ignore[attr-defined]
 
 
 def resolve_relative_path(path: str) -> str:

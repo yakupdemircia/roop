@@ -73,7 +73,8 @@ def pick_queue(queue: Queue[str], queue_per_future: int) -> List[str]:
 
 
 def process_video(source_path: str, frame_paths: list[str], process_frames: Callable[[str, List[str], Any], None]) -> None:
-    progress_bar_format = '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
+    #progress_bar_format = '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
+    progress_bar_format = '{l_bar}{bar}|[{elapsed}<{remaining}]'
     total = len(frame_paths)
     with tqdm(total=total, desc='Processing', unit='frame', dynamic_ncols=True, bar_format=progress_bar_format) as progress:
         multi_process_frame(source_path, frame_paths, process_frames, lambda: update_progress(progress))
@@ -81,11 +82,11 @@ def process_video(source_path: str, frame_paths: list[str], process_frames: Call
 
 def update_progress(progress: Any = None) -> None:
     process = psutil.Process(os.getpid())
-    memory_usage = process.memory_info().rss / 1024 / 1024 / 1024
-    progress.set_postfix({
-        'memory_usage': '{:.2f}'.format(memory_usage).zfill(5) + 'GB',
-        'execution_providers': roop.globals.execution_providers,
-        'execution_threads': roop.globals.execution_threads
-    })
+    #memory_usage = process.memory_info().rss / 1024 / 1024 / 1024
+    #progress.set_postfix({
+    #    'memory_usage': '{:.2f}'.format(memory_usage).zfill(5) + 'GB',
+    #    'execution_providers': roop.globals.execution_providers,
+    #    'execution_threads': roop.globals.execution_threads
+    #})
     progress.refresh()
     progress.update(1)
