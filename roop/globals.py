@@ -3,6 +3,7 @@ from typing import List, Optional
 source_path: Optional[str] = None
 target_path: Optional[str] = None
 output_path: Optional[str] = None
+reference_face_path: Optional[str] = None
 headless: Optional[bool] = None
 frame_processors: List[str] = []
 keep_fps: Optional[bool] = None
