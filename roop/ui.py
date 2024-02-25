@@ -250,7 +250,8 @@ def init_preview() -> None:
 def update_preview(frame_number: int = 0) -> None:
     if roop.globals.source_path and roop.globals.target_path:
         temp_frame = get_video_frame(roop.globals.target_path, frame_number)
-        if predict_frame(temp_frame):
+        if roop.globals.check_nsfw and predict_frame(temp_frame):
+            update_status('NSFW content detected!')
             sys.exit()
         source_face = get_one_face(cv2.imread(roop.globals.source_path))
         if not get_face_reference():

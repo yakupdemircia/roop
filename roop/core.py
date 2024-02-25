@@ -49,6 +49,7 @@ def parse_args() -> None:
     program.add_argument('--execution-threads', help='number of execution threads', dest='execution_threads', type=int, default=suggest_execution_threads())
     program.add_argument('--reference-face-path', help='path of reference face', dest='reference_face_path')
     program.add_argument('-v', '--version', action='version', version=f'{roop.metadata.name} {roop.metadata.version}')
+    program.add_argument('--check-nsfw', help='check if media is nsfw', dest='check_nsfw', action='store_true')
 
     args = program.parse_args()
 
@@ -72,6 +73,7 @@ def parse_args() -> None:
     roop.globals.execution_providers = decode_execution_providers(args.execution_provider)
     roop.globals.execution_threads = args.execution_threads
     roop.globals.reference_face_path = args.reference_face_path
+    roop.globals.check_nsfw = args.check_nsfw
 
 
 def encode_execution_providers(execution_providers: List[str]) -> List[str]:
@@ -136,7 +138,8 @@ def start() -> None:
             return
     # process image to image
     if has_image_extension(roop.globals.target_path):
-        if predict_image(roop.globals.target_path):
+        if roop.globals.check_nsfw and predict_image(roop.globals.target_path):
+            update_status('NSFW content detected!')
             destroy()
         shutil.copy2(roop.globals.target_path, roop.globals.output_path)
         # process frame
@@ -151,7 +154,8 @@ def start() -> None:
             update_status('Processing to image failed!')
         return
     # process image to videos
-    if predict_video(roop.globals.target_path):
+    if roop.globals.check_nsfw and predict_video(roop.globals.target_path):
+        update_status('NSFW content detected!')
         destroy()
     update_status('Creating temporary resources...')
     create_temp(roop.globals.target_path)
